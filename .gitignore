@@ -1,1 +1,13 @@
+# Secrets and local config
+.env
+
+# Uploaded files and local databases
 media/
+media_test/
+db.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
