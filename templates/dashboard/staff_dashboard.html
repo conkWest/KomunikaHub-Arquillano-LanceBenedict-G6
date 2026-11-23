@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Barangay Staff Dashboard</h3>
+    <a href="{% url 'dispatch_list' %}" class="btn btn-primary">Open Dispatch Panel</a>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card shadow-sm text-center"><div class="card-body"><div class="display-6">{{ total }}</div><div class="text-muted">All tickets</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card shadow-sm text-center border-secondary"><div class="card-body"><div class="display-6">{{ counts.Pending }}</div><div class="text-muted">Pending</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card shadow-sm text-center border-primary"><div class="card-body"><div class="display-6">{{ counts.In_Progress }}</div><div class="text-muted">In Progress</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card shadow-sm text-center border-success"><div class="card-body"><div class="display-6">{{ counts.Resolved }}</div><div class="text-muted">Resolved</div></div></div></div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-7"><div class="card shadow-sm"><div class="card-header bg-white fw-semibold">Newest pending tickets</div>
+        <ul class="list-group list-group-flush">
+        {% for t in needs_attention %}<li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'manage_ticket' t.pk %}" class="text-decoration-none">{{ t.ticket_no }} &middot; {{ t.title }} <span class="text-muted small">({{ t.zone.code }})</span></a>
+            {% include 'tickets/_badges.html' with kind='urgency' value=t.urgency %}</li>
+        {% empty %}<li class="list-group-item text-muted">No pending tickets. Nice work!</li>{% endfor %}
+        </ul></div></div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm mb-3"><div class="card-header bg-white fw-semibold">Open tickets by urgency</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">Critical <strong>{{ urgency.Critical }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between">High <strong>{{ urgency.High }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between">Medium <strong>{{ urgency.Medium }}</strong></li>
+                <li class="list-group-item d-flex justify-content-between">Low <strong>{{ urgency.Low }}</strong></li>
+            </ul></div>
+        <div class="card shadow-sm"><div class="card-header bg-white fw-semibold">Busiest zones (open)</div>
+            <ul class="list-group list-group-flush">
+            {% for z in by_zone %}<li class="list-group-item d-flex justify-content-between">{{ z.zone__code }} - {{ z.zone__name }}<strong>{{ z.n }}</strong></li>
+            {% empty %}<li class="list-group-item text-muted">No open tickets.</li>{% endfor %}
+            </ul></div>
+    </div>
+</div>
+{% endblock %}
