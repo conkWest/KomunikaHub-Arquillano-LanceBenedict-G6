@@ -1,0 +1,11 @@
+{# usage: {% include 'tickets/_badges.html' with kind='status' value=ticket.status %} #}
+{% if kind == 'status' %}
+  {% if value == 'Pending' %}<span class="badge text-bg-secondary">Pending</span>
+  {% elif value == 'In Progress' %}<span class="badge text-bg-primary">In Progress</span>
+  {% else %}<span class="badge text-bg-success">Resolved</span>{% endif %}
+{% else %}
+  {% if value == 'Critical' %}<span class="badge text-bg-danger">Critical</span>
+  {% elif value == 'High' %}<span class="badge text-bg-warning">High</span>
+  {% elif value == 'Medium' %}<span class="badge text-bg-info">Medium</span>
+  {% else %}<span class="badge text-bg-light border">Low</span>{% endif %}
+{% endif %}
