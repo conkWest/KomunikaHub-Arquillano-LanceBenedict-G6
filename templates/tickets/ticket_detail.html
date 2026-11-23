@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h3 class="mb-1">{{ ticket.ticket_no }}</h3>
+        <div class="text-muted">{{ ticket.title }}</div>
+    </div>
+    <div class="text-end">
+        {% include 'tickets/_badges.html' with kind='status' value=ticket.status %}
+        {% include 'tickets/_badges.html' with kind='urgency' value=ticket.urgency %}
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-4"><div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Category</dt><dd class="col-sm-9">{{ ticket.category.name }}</dd>
+                <dt class="col-sm-3">Zone</dt><dd class="col-sm-9">{{ ticket.zone }}</dd>
+                <dt class="col-sm-3">Location</dt><dd class="col-sm-9">{{ ticket.location_details }}</dd>
+                <dt class="col-sm-3">Filed</dt><dd class="col-sm-9">{{ ticket.created_at|date:"M d, Y g:i A" }}</dd>
+                <dt class="col-sm-3">Assigned team</dt>
+                <dd class="col-sm-9">{% if assignment %}{{ assignment.team.name }}{% else %}<span class="text-muted">Not yet assigned</span>{% endif %}</dd>
+                <dt class="col-sm-3">Description</dt><dd class="col-sm-9">{{ ticket.description|linebreaksbr }}</dd>
+            </dl>
+            {% if attachments %}
+            <hr><div class="d-flex flex-wrap gap-2">
+                {% for a in attachments %}<a href="{{ a.image.url }}" target="_blank"><img src="{{ a.image.url }}" alt="{{ a.file_name }}" class="img-thumbnail" style="height:110px"></a>{% endfor %}
+            </div>
+            {% endif %}
+            {% if ticket.is_closed %}
+            <div class="alert alert-success mt-3 mb-0"><strong>Resolution:</strong> {{ ticket.resolution_summary|linebreaksbr }}
+                <div class="small text-muted">Resolved {{ ticket.resolved_at|date:"M d, Y g:i A" }}</div></div>
+            {% endif %}
+        </div>
+        {% if ticket.resident_can_edit %}
+        <div class="card-footer bg-white"><a class="btn btn-sm btn-outline-primary" href="{% url 'ticket_edit' ticket.pk %}">Edit ticket</a></div>
+        {% endif %}
+        </div>
+        <div class="card shadow-sm"><div class="card-header bg-white fw-semibold">Updates from Barangay Staff</div>
+            <ul class="list-group list-group-flush">
+            {% for r in remarks %}
+                <li class="list-group-item">{{ r.remark_text|linebreaksbr }}
+                    <div class="small text-muted">{{ r.author.get_full_name|default:r.author.username }} &middot; {{ r.created_at|date:"M d, Y g:i A" }}</div></li>
+            {% empty %}<li class="list-group-item text-muted">No public updates yet.</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm"><div class="card-header bg-white fw-semibold">Status History</div>
+            <ul class="list-group list-group-flush">
+            {% for l in logs %}
+                <li class="list-group-item">
+                    {% include 'tickets/_badges.html' with kind='status' value=l.new_status %}
+                    <span class="small text-muted ms-1">{{ l.changed_at|date:"M d, Y g:i A" }}</span>
+                    {% if l.remarks %}<div class="small">{{ l.remarks }}</div>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+<a class="btn btn-link mt-3" href="{% url 'my_tickets' %}">&larr; Back to my tickets</a>
+{% endblock %}

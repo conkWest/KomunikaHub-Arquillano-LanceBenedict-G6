@@ -1,0 +1,11 @@
+<form method="get" class="row g-2 mb-3">
+    {% for field in filter_form %}
+        {% if field.name in fields %}
+        <div class="col-6 col-md">{{ field }}</div>
+        {% endif %}
+    {% endfor %}
+    <div class="col-12 col-md-auto d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit">Filter</button>
+        <a class="btn btn-outline-secondary" href="{{ reset_url }}">Reset</a>
+    </div>
+</form>

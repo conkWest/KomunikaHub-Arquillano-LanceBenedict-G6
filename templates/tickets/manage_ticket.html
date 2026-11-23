@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div><h3 class="mb-1">{{ ticket.ticket_no }}</h3><div class="text-muted">{{ ticket.title }}</div></div>
+    <div>{% include 'tickets/_badges.html' with kind='status' value=ticket.status %}
+         {% include 'tickets/_badges.html' with kind='urgency' value=ticket.urgency %}</div>
+</div>
+<div class="row g-4">
+<div class="col-lg-7">
+    <div class="card shadow-sm mb-4"><div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Reporter</dt><dd class="col-sm-9">{{ ticket.reporter.get_full_name|default:ticket.reporter.username }}{% if ticket.reporter.contact_number %} &middot; {{ ticket.reporter.contact_number }}{% endif %}</dd>
+            <dt class="col-sm-3">Category</dt><dd class="col-sm-9">{{ ticket.category.name }}</dd>
+            <dt class="col-sm-3">Zone</dt><dd class="col-sm-9">{{ ticket.zone }}</dd>
+            <dt class="col-sm-3">Location</dt><dd class="col-sm-9">{{ ticket.location_details }}</dd>
+            <dt class="col-sm-3">Filed</dt><dd class="col-sm-9">{{ ticket.created_at|date:"M d, Y g:i A" }}</dd>
+            <dt class="col-sm-3">Team</dt><dd class="col-sm-9">{% if assignment %}{{ assignment.team.name }}{% else %}<span class="text-muted">Unassigned</span>{% endif %}</dd>
+            <dt class="col-sm-3">Description</dt><dd class="col-sm-9">{{ ticket.description|linebreaksbr }}</dd>
+        </dl>
+        {% if attachments %}<hr><div class="d-flex flex-wrap gap-2">
+            {% for a in attachments %}<a href="{{ a.image.url }}" target="_blank"><img src="{{ a.image.url }}" alt="{{ a.file_name }}" class="img-thumbnail" style="height:110px"></a>{% endfor %}
+        </div>{% endif %}
+        {% if ticket.is_closed %}<div class="alert alert-success mt-3 mb-0"><strong>Resolution:</strong> {{ ticket.resolution_summary|linebreaksbr }}</div>{% endif %}
+    </div></div>
+
+    <div class="card shadow-sm"><div class="card-header bg-white fw-semibold">Remarks Log</div>
+        <ul class="list-group list-group-flush">
+        {% for r in remarks %}
+            <li class="list-group-item d-flex justify-content-between">
+                <div>
+                    <span class="badge {% if r.visibility == 'Public' %}text-bg-info{% else %}text-bg-dark{% endif %}">{{ r.visibility }}</span>
+                    {{ r.remark_text|linebreaksbr }}
+                    <div class="small text-muted">{{ r.author.get_full_name|default:r.author.username }} &middot; {{ r.created_at|date:"M d, Y g:i A" }}</div>
+                </div>
+                {% if not ticket.is_closed and r.author_id == user.id %}
+                <form method="post" action="{% url 'remark_delete' r.pk %}" onsubmit="return confirm('Delete this remark?');">
+                    {% csrf_token %}<button class="btn btn-sm btn-outline-danger">Delete</button></form>
+                {% endif %}
+            </li>
+        {% empty %}<li class="list-group-item text-muted">No remarks yet.</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+
+<div class="col-lg-5">
+{% if ticket.is_closed %}
+    <div class="alert alert-secondary">This ticket is <strong>Resolved</strong> and closed. No further assignments, remarks or status changes are allowed.</div>
+{% else %}
+    <div class="card shadow-sm mb-3"><div class="card-header bg-white fw-semibold">Urgency</div><div class="card-body">
+        <form method="post" class="d-flex gap-2">{% csrf_token %}<input type="hidden" name="action" value="urgency">
+            {{ urgency_form.urgency }}<button class="btn btn-outline-primary">Set</button></form>
+    </div></div>
+    <div class="card shadow-sm mb-3"><div class="card-header bg-white fw-semibold">Assign Field Team</div><div class="card-body">
+        <form method="post" class="d-flex gap-2">{% csrf_token %}<input type="hidden" name="action" value="assign">
+            {{ assign_form.team }}<button class="btn btn-outline-primary">{% if assignment %}Reassign{% else %}Assign{% endif %}</button></form>
+        {% for e in assign_form.team.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div></div>
+    <div class="card shadow-sm mb-3"><div class="card-header bg-white fw-semibold">Advance Status to {{ ticket.next_status }}</div><div class="card-body">
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="advance">
+            {% if ticket.next_status == 'Resolved' %}
+                <div class="mb-2"><label class="form-label">Resolution summary *</label>{{ advance_form.resolution_summary }}</div>
+            {% endif %}
+            <div class="mb-2"><label class="form-label">Note for the status log</label>{{ advance_form.remarks }}</div>
+            <button class="btn btn-success">Move to {{ ticket.next_status }}</button>
+        </form>
+    </div></div>
+    <div class="card shadow-sm mb-3"><div class="card-header bg-white fw-semibold">Add Remark</div><div class="card-body">
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="remark">
+            {% for field in remark_form %}{% include 'tickets/_field.html' %}{% endfor %}
+            <button class="btn btn-primary">Post remark</button></form>
+    </div></div>
+{% endif %}
+    <div class="card shadow-sm mb-3"><div class="card-header bg-white fw-semibold">Status History (audit)</div>
+        <ul class="list-group list-group-flush">
+        {% for l in logs %}<li class="list-group-item small">
+            {{ l.old_status|default:"&mdash;" }} &rarr; <strong>{{ l.new_status }}</strong>
+            <div class="text-muted">{{ l.changed_by.username }} &middot; {{ l.changed_at|date:"M d, Y g:i A" }}</div>
+            {% if l.remarks %}<div>{{ l.remarks }}</div>{% endif %}</li>{% endfor %}
+        </ul></div>
+    <div class="card shadow-sm"><div class="card-header bg-white fw-semibold">Assignment History</div>
+        <ul class="list-group list-group-flush">
+        {% for a in assignment_history %}<li class="list-group-item small">
+            <strong>{{ a.team.name }}</strong> by {{ a.assigned_by.username }}
+            <div class="text-muted">{{ a.assigned_at|date:"M d, g:i A" }}{% if a.released_at %} &rarr; released {{ a.released_at|date:"M d, g:i A" }}{% else %} (active){% endif %}</div></li>
+        {% empty %}<li class="list-group-item text-muted small">No assignments yet.</li>{% endfor %}
+        </ul></div>
+</div>
+</div>
+<a class="btn btn-link mt-3" href="{% url 'dispatch_list' %}">&larr; Back to dispatch panel</a>
+{% endblock %}
